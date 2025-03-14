@@ -9,23 +9,43 @@ export interface MorseNode {
   dash?: MorseNode;
 }
 
-// Create the morse tree according to the image provided
+// Create a more comprehensive morse tree for English alphabet
 export const morseTree: MorseNode = {
-  // Starting point (top arrow)
+  // Starting point (root)
   dot: {
     // E branch
     letter: "E",
     dot: {
       // I branch
       letter: "I",
-      dot: { letter: "S" },
-      dash: { letter: "U" },
+      dot: {
+        // S branch
+        letter: "S",
+        dot: { letter: "H" },
+        dash: { letter: "V" },
+      },
+      dash: {
+        // U branch
+        letter: "U",
+        dot: { letter: "F" },
+        dash: undefined,
+      },
     },
     dash: {
       // A branch
       letter: "A",
-      dot: { letter: "R" },
-      dash: { letter: "W" },
+      dot: {
+        // R branch
+        letter: "R",
+        dot: { letter: "L" },
+        dash: undefined,
+      },
+      dash: {
+        // W branch
+        letter: "W",
+        dot: { letter: "P" },
+        dash: { letter: "J" },
+      },
     },
   },
   dash: {
@@ -34,19 +54,42 @@ export const morseTree: MorseNode = {
     dot: {
       // N branch
       letter: "N",
-      dot: { letter: "D" },
-      dash: { letter: "K" },
+      dot: {
+        // D branch
+        letter: "D",
+        dot: { letter: "B" },
+        dash: { letter: "X" },
+      },
+      dash: {
+        // K branch
+        letter: "K",
+        dot: { letter: "C" },
+        dash: { letter: "Y" },
+      },
     },
     dash: {
       // M branch
       letter: "M",
-      dot: { letter: "G" },
-      dash: { letter: "O" },
+      dot: {
+        // G branch
+        letter: "G",
+        dot: { letter: "Z" },
+        dash: { letter: "Q" },
+      },
+      dash: {
+        // O branch
+        letter: "O",
+        dot: undefined,
+        dash: undefined,
+      },
     },
   },
 };
 
-// Additional letters not in the tree (these would need their own paths in a complete implementation)
+// Debug log the morse tree structure
+console.log("Morse tree structure:", JSON.stringify(morseTree, null, 2));
+
+// Morse code map for standard English alphabet and common symbols
 export const morseMap: Record<string, string> = {
   A: ".-",
   B: "-...",

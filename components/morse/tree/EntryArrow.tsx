@@ -44,7 +44,7 @@ const EntryArrow = ({
   });
 
   return (
-    <group position={[0, 5.5, 0]}>
+    <group position={[0, 10.5, 0]}>
       {/* Main arrow */}
       <mesh ref={arrowRef} rotation={[0, 0, Math.PI]}>
         <coneGeometry args={[0.3, 0.8, 32]} />
@@ -68,8 +68,8 @@ const EntryArrow = ({
       </mesh>
 
       {/* Vertical line extending down from the arrow */}
-      <mesh position={[0, -0.4, 0]} rotation={[Math.PI / 2, 0, 0]}>
-        <cylinderGeometry args={[0.05, 0.05, 1, 16]} />
+      <mesh position={[0, -0.9, 0]} rotation={[Math.PI / 2, 0, 0]}>
+        <cylinderGeometry args={[0.05, 0.05, 2, 16]} />
         <meshStandardMaterial
           color={color}
           metalness={0.8}

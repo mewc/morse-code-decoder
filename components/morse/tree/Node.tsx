@@ -14,6 +14,7 @@ const Node = ({
   scale = 1,
   isRoot = false,
   symbolType = "dot", // 'dot', 'dash', or 'root'
+  onClick = () => {},
 }: {
   position: [number, number, number];
   letter?: string;
@@ -22,6 +23,7 @@ const Node = ({
   scale?: number;
   isRoot?: boolean;
   symbolType?: "dot" | "dash" | "root";
+  onClick?: () => void;
 }) => {
   const meshRef = useRef<THREE.Mesh>(null);
   const glowRef = useRef<THREE.Mesh>(null);
@@ -50,13 +52,13 @@ const Node = ({
   // Determine geometry based on the symbol type
   const geometry = useMemo(() => {
     if (symbolType === "dot") {
-      // Dot nodes are cylinders (like in the reference image)
-      return (
-        <cylinderGeometry args={[0.3 * scale, 0.3 * scale, 0.2 * scale, 32]} />
-      );
+      // Dot nodes are spheres
+      return <sphereGeometry args={[0.3 * scale, 32, 32]} />;
     } else if (symbolType === "dash") {
-      // Dash nodes are rectangles (like in the reference image)
-      return <boxGeometry args={[0.8 * scale, 0.2 * scale, 0.3 * scale]} />;
+      // Dash nodes are cylinders (horizontal)
+      return (
+        <cylinderGeometry args={[0.2 * scale, 0.2 * scale, 0.8 * scale, 32]} />
+      );
     } else {
       // Root node - use a sphere for better visual
       return <sphereGeometry args={[0.5 * scale, 32, 32]} />;
@@ -92,9 +94,13 @@ const Node = ({
       {/* The main node */}
       <mesh
         ref={meshRef}
-        rotation={symbolType === "dot" ? [Math.PI / 2, 0, 0] : [0, 0, 0]}
+        rotation={symbolType === "dash" ? [0, 0, Math.PI / 2] : [0, 0, 0]}
         castShadow
         receiveShadow
+        onClick={(e) => {
+          e.stopPropagation();
+          onClick();
+        }}
       >
         {geometry}
         <meshStandardMaterial
@@ -110,7 +116,7 @@ const Node = ({
       <mesh
         ref={glowRef}
         scale={[1.2, 1.2, 1.2]}
-        rotation={symbolType === "dot" ? [Math.PI / 2, 0, 0] : [0, 0, 0]}
+        rotation={symbolType === "dash" ? [0, 0, Math.PI / 2] : [0, 0, 0]}
       >
         {geometry}
         <meshBasicMaterial
@@ -123,13 +129,12 @@ const Node = ({
       {/* Letter label if provided */}
       {letter && (
         <Text
-          position={[0, symbolType === "dot" ? -0.3 : -0.3, 0]}
-          fontSize={0.35}
+          position={[0, -0.5, 0]}
+          fontSize={0.4}
           color={isActive || isCompleted ? "#FFFFFF" : "#AAAAAA"}
           anchorX="center"
           anchorY="middle"
-          font="/fonts/Inter-Bold.woff"
-          outlineWidth={0.01}
+          outlineWidth={0.02}
           outlineColor="#000000"
         >
           {letter}

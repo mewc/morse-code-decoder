@@ -4,7 +4,7 @@ import { useMemo } from "react";
 import { Line } from "@react-three/drei";
 import * as THREE from "three";
 
-// NeonPipe component for visualizing the connections between nodes
+// NeonPipe component for creating right-angled, neon-like connections
 const NeonPipe = ({
   start,
   end,
@@ -18,21 +18,21 @@ const NeonPipe = ({
 }) => {
   // Create a right-angled path using three points
   // Extract coordinates we need
-  const startY = start[1];
-  const endX = end[0];
+  const [, startY, startZ] = start;
+  const [endX, ,] = end;
 
   // Create midpoint with a right angle
-  const midPoint: [number, number, number] = [endX, startY, end[2]];
+  const midPoint: [number, number, number] = [endX, startY, startZ];
 
   // Define colors based on state
   const baseColor = isActive ? "#FFD700" : isCompleted ? "#E5C100" : "#555555";
   const glowColor = isActive ? "#FFD700" : isCompleted ? "#E5C100" : "#444444";
 
   // Define line properties
-  const mainLineWidth = isActive ? 2.5 : isCompleted ? 2 : 1.5;
-  const glowLineWidth = isActive ? 5 : isCompleted ? 4 : 2;
-  const mainOpacity = isActive ? 1 : isCompleted ? 0.9 : 0.6;
-  const glowOpacity = isActive ? 0.3 : isCompleted ? 0.2 : 0.05;
+  const mainLineWidth = isActive ? 3 : isCompleted ? 2.5 : 1.8;
+  const glowLineWidth = isActive ? 6 : isCompleted ? 5 : 3;
+  const mainOpacity = isActive ? 1 : isCompleted ? 0.9 : 0.7;
+  const glowOpacity = isActive ? 0.4 : isCompleted ? 0.3 : 0.1;
 
   // Create points arrays for the two segments
   const horizontalPoints = useMemo(() => {

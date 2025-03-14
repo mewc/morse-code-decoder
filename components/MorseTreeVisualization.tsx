@@ -125,7 +125,6 @@ const Node = ({
           color={isActive || isCompleted ? "#FFFFFF" : "#AAAAAA"}
           anchorX="center"
           anchorY="middle"
-          font="/fonts/Inter-Bold.woff"
           outlineWidth={0.01}
           outlineColor="#000000"
         >

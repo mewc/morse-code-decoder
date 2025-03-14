@@ -38,13 +38,13 @@ const Background = () => {
       {/* Bottom accent light with animation */}
       <pointLight
         ref={lightsRef}
-        position={[0, -10, 0]}
+        position={[0, -15, 0]}
         intensity={0.7}
         color="#6A7A8A"
       />
 
       {/* Subtle fog for depth */}
-      <fog attach="fog" args={["#10131f", 20, 40]} />
+      <fog attach="fog" args={["#10131f", 25, 50]} />
 
       {/* Background gradient plane */}
       <mesh position={[0, 0, -15]}>
@@ -55,12 +55,12 @@ const Background = () => {
       {/* Subtle grid lines for reference (more visible now) */}
       <group>
         {/* Horizontal lines */}
-        {Array.from({ length: 10 }).map((_, i) => (
+        {Array.from({ length: 15 }).map((_, i) => (
           <Line
             key={`h-line-${i}`}
             points={[
-              [-20, -8 + i * 2, -10],
-              [20, -8 + i * 2, -10],
+              [-15, -10 + i * 2, -10],
+              [15, -10 + i * 2, -10],
             ]}
             color="#2A3A4A"
             lineWidth={1}
@@ -70,12 +70,12 @@ const Background = () => {
         ))}
 
         {/* Vertical lines */}
-        {Array.from({ length: 10 }).map((_, i) => (
+        {Array.from({ length: 8 }).map((_, i) => (
           <Line
             key={`v-line-${i}`}
             points={[
-              [-20 + i * 4, -8, -10],
-              [-20 + i * 4, 12, -10],
+              [-14 + i * 4, -10, -10],
+              [-14 + i * 4, 20, -10],
             ]}
             color="#2A3A4A"
             lineWidth={1}

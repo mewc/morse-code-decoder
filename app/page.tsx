@@ -46,9 +46,6 @@ export default function Home() {
     setLetterCompleted(false);
     setCurrentPath([]);
 
-    // We'll use our dedicated audio component in morse/audio/MorseAudio.tsx
-    // for actual playback. This is just to simulate the sequence.
-
     // Parse the morse code into symbols
     const symbols = code
       .split("")
@@ -149,14 +146,15 @@ export default function Home() {
                   }
                 }}
               />
-              <Button
-                onClick={handlePlay}
-                disabled={!inputText.trim() || isPlaying}
-                className="bg-amber-600 hover:bg-amber-500"
-              >
-                Play
-              </Button>
-              {isPlaying && (
+              {!isPlaying ? (
+                <Button
+                  onClick={handlePlay}
+                  disabled={!inputText.trim()}
+                  className="bg-amber-600 hover:bg-amber-500"
+                >
+                  Play
+                </Button>
+              ) : (
                 <Button onClick={handleStop} variant="destructive">
                   Stop
                 </Button>
@@ -195,6 +193,7 @@ export default function Home() {
           currentPath={currentPath}
           isPlaying={isPlaying}
           letterCompleted={letterCompleted}
+          onPlayLetter={playLetter}
         />
 
         <Card className="bg-slate-800 border-slate-700">

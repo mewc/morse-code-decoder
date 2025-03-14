@@ -9,11 +9,12 @@ const TreeVisualization = ({
   root,
   activePath = [],
   letterCompleted = false,
-  basePosition = [0, 4, 0],
+  basePosition = [0, 8, 0],
   depth = 0,
-  horizontalSpacing = 2.5,
-  verticalSpacing = 1.8,
+  horizontalSpacing = 2,
+  verticalSpacing = 3,
   pathSoFar = "",
+  onNodeClick = (letter: string) => {},
 }: {
   root: MorseNode;
   activePath?: MorseSymbol[];
@@ -23,19 +24,25 @@ const TreeVisualization = ({
   horizontalSpacing?: number;
   verticalSpacing?: number;
   pathSoFar?: string;
+  onNodeClick?: (letter: string) => void;
 }) => {
   const [x, y, z] = basePosition;
-  const isActive = depth === activePath.length;
 
-  // Check if this node is on the current active path by comparing the path so far
-  // with the active path at each level
-  // Convert the activePath array to a string for direct comparison
-  const activePathString = activePath.slice(0, depth).join("");
-  const isOnActivePath = pathSoFar === activePathString;
-  const isCompleted = letterCompleted && isOnActivePath;
+  // To check if this specific node is active (exactly at the current depth of the active path)
+  const isActive =
+    depth === activePath.length && pathSoFar === activePath.join("");
 
-  // Calculate spread factor to widen the tree as we go deeper
-  const spreadFactor = Math.pow(1.3, depth);
+  // Check if this node is on the current active path
+  const isOnActivePath =
+    pathSoFar === activePath.slice(0, depth).join("") &&
+    depth <= activePath.length;
+
+  // Only show as completed if this is the final target letter and path is completed
+  const isCompleted = letterCompleted && pathSoFar === activePath.join("");
+
+  // Calculate spread factor to widen the tree slightly as we go deeper
+  // But with less horizontal spreading than before
+  const spreadFactor = Math.pow(1.2, depth);
   const currentHorizontalSpacing = horizontalSpacing * spreadFactor;
 
   // Determine symbol type from path
@@ -46,10 +53,12 @@ const TreeVisualization = ({
     return lastSymbol === "." ? "dot" : "dash";
   };
 
-  // Used for debugging
-  console.log(
-    `Node at depth ${depth}, path "${pathSoFar}", isOnActivePath: ${isOnActivePath}, activePath: "${activePathString}"`
-  );
+  // Handle node click - play morse code for the letter if it has one
+  const handleNodeClick = () => {
+    if (root.letter) {
+      onNodeClick(root.letter);
+    }
+  };
 
   return (
     <group>
@@ -62,6 +71,7 @@ const TreeVisualization = ({
         scale={depth === 0 ? 1.5 : 1}
         isRoot={depth === 0}
         symbolType={getSymbolType()}
+        onClick={handleNodeClick}
       />
 
       {/* Dot branch (left) */}
@@ -70,7 +80,7 @@ const TreeVisualization = ({
           <NeonPipe
             start={[x, y, z]}
             end={[x - currentHorizontalSpacing, y - verticalSpacing, z]}
-            isActive={activePath[depth] === "."}
+            isActive={activePath[depth] === "." && isOnActivePath}
             isCompleted={
               letterCompleted && activePath[depth] === "." && isOnActivePath
             }
@@ -88,6 +98,7 @@ const TreeVisualization = ({
             horizontalSpacing={horizontalSpacing}
             verticalSpacing={verticalSpacing}
             pathSoFar={pathSoFar + "."}
+            onNodeClick={onNodeClick}
           />
         </>
       )}
@@ -98,7 +109,7 @@ const TreeVisualization = ({
           <NeonPipe
             start={[x, y, z]}
             end={[x + currentHorizontalSpacing, y - verticalSpacing, z]}
-            isActive={activePath[depth] === "-"}
+            isActive={activePath[depth] === "-" && isOnActivePath}
             isCompleted={
               letterCompleted && activePath[depth] === "-" && isOnActivePath
             }
@@ -116,6 +127,7 @@ const TreeVisualization = ({
             horizontalSpacing={horizontalSpacing}
             verticalSpacing={verticalSpacing}
             pathSoFar={pathSoFar + "-"}
+            onNodeClick={onNodeClick}
           />
         </>
       )}
