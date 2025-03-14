@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useMemo } from "react";
+import { useRef, useMemo, useState } from "react";
 import { useFrame } from "@react-three/fiber";
 import { Text } from "@react-three/drei";
 import * as THREE from "three";
@@ -27,6 +27,8 @@ const Node = ({
 }) => {
   const meshRef = useRef<THREE.Mesh>(null);
   const glowRef = useRef<THREE.Mesh>(null);
+  const orbitRef = useRef<THREE.Group>(null);
+  const [isHovered, setIsHovered] = useState(false);
 
   // Determine colors based on active state and symbol type
   const color =
@@ -65,7 +67,29 @@ const Node = ({
     }
   }, [symbolType, scale]);
 
-  // Pulsation effect for active nodes
+  // Orbital ring geometry
+  const orbitalRing = useMemo(() => {
+    const radius = symbolType === "root" ? 0.7 * scale : 0.5 * scale;
+    const curve = new THREE.EllipseCurve(
+      0,
+      0, // Center x, y
+      radius,
+      radius, // xRadius, yRadius
+      0,
+      2 * Math.PI, // startAngle, endAngle
+      false, // clockwise
+      0 // rotation
+    );
+
+    const points = curve.getPoints(50);
+    const ringGeometry = new THREE.BufferGeometry().setFromPoints(
+      points.map((p) => new THREE.Vector3(p.x, p.y, 0))
+    );
+
+    return ringGeometry;
+  }, [symbolType, scale]);
+
+  // Pulsation effect for active nodes and orbit animation for hovered nodes
   useFrame((state) => {
     if (meshRef.current && glowRef.current) {
       if (isActive) {
@@ -86,6 +110,14 @@ const Node = ({
           meshRef.current.material.emissiveIntensity = emissiveIntensity;
         }
       }
+
+      // Orbital animation for hovered nodes
+      if (orbitRef.current && isHovered) {
+        const time = state.clock.getElapsedTime();
+        orbitRef.current.rotation.z = time * 1.5;
+        orbitRef.current.rotation.x = Math.sin(time) * 0.5;
+        orbitRef.current.rotation.y = Math.cos(time) * 0.5;
+      }
     }
   });
 
@@ -101,6 +133,15 @@ const Node = ({
           e.stopPropagation();
           onClick();
         }}
+        onPointerOver={(e) => {
+          e.stopPropagation();
+          setIsHovered(true);
+          document.body.style.cursor = "pointer";
+        }}
+        onPointerOut={() => {
+          setIsHovered(false);
+          document.body.style.cursor = "auto";
+        }}
       >
         {geometry}
         <meshStandardMaterial
@@ -108,7 +149,9 @@ const Node = ({
           metalness={0.8}
           roughness={0.2}
           emissive={emissiveColor}
-          emissiveIntensity={emissiveIntensity}
+          emissiveIntensity={
+            isHovered ? emissiveIntensity * 1.5 : emissiveIntensity
+          }
         />
       </mesh>
 
@@ -122,16 +165,38 @@ const Node = ({
         <meshBasicMaterial
           color={color}
           transparent={true}
-          opacity={isActive ? 0.4 : isCompleted ? 0.3 : 0.1}
+          opacity={isHovered ? 0.5 : isActive ? 0.4 : isCompleted ? 0.3 : 0.1}
         />
       </mesh>
+
+      {/* Orbital ring for hover effect */}
+      {isHovered && (
+        <group ref={orbitRef}>
+          <line>
+            <bufferGeometry attach="geometry" {...orbitalRing} />
+            <lineBasicMaterial
+              attach="material"
+              color={isActive || isCompleted ? "#FFD700" : "#4080FF"}
+              linewidth={2}
+              transparent
+              opacity={0.7}
+            />
+          </line>
+        </group>
+      )}
 
       {/* Letter label if provided */}
       {letter && (
         <Text
           position={[0, -0.5, 0]}
           fontSize={0.4}
-          color={isActive || isCompleted ? "#FFFFFF" : "#AAAAAA"}
+          color={
+            isActive || isCompleted
+              ? "#FFFFFF"
+              : isHovered
+              ? "#FFFFFF"
+              : "#AAAAAA"
+          }
           anchorX="center"
           anchorY="middle"
           outlineWidth={0.02}

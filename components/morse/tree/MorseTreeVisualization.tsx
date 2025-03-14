@@ -4,7 +4,7 @@ import { Canvas } from "@react-three/fiber";
 import { EffectComposer, Bloom } from "@react-three/postprocessing";
 import * as THREE from "three";
 import { MorseNode, MorseSymbol } from "@/lib/morse";
-import { useEffect, useCallback } from "react";
+import { useCallback } from "react";
 
 import TreeVisualization from "./TreeVisualization";
 import EntryArrow from "./EntryArrow";
@@ -17,7 +17,7 @@ const MorseTreeVisualization = ({
   currentPath = [],
   isPlaying = false,
   letterCompleted = false,
-  onPlayLetter = (letter: string) => {},
+  onPlayLetter,
 }: {
   morseTree: MorseNode;
   currentPath?: MorseSymbol[];
@@ -25,19 +25,10 @@ const MorseTreeVisualization = ({
   letterCompleted?: boolean;
   onPlayLetter?: (letter: string) => void;
 }) => {
-  useEffect(() => {
-    console.log("MorseTreeVisualization mounted", {
-      morseTree,
-      currentPath,
-      isPlaying,
-      letterCompleted,
-    });
-  }, [morseTree, currentPath, isPlaying, letterCompleted]);
-
   // Handle node clicks - only play if not already playing
   const handleNodeClick = useCallback(
     (letter: string) => {
-      if (!isPlaying && letter) {
+      if (!isPlaying && letter && onPlayLetter) {
         console.log(`Node clicked: ${letter}`);
         onPlayLetter(letter);
       }
@@ -50,11 +41,11 @@ const MorseTreeVisualization = ({
       <Canvas
         shadows
         dpr={[1, 2]}
-        camera={{ position: [0, 0, 18], fov: 40 }}
+        camera={{ position: [0, 2, 24], fov: 50 }}
         gl={{
           antialias: true,
           toneMapping: THREE.ACESFilmicToneMapping,
-          toneMappingExposure: 1.8, // Increased exposure for better visibility
+          toneMappingExposure: 2.0, // Increased exposure for better visibility
         }}
       >
         <color attach="background" args={["#10131f"]} />
