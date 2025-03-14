@@ -30,9 +30,24 @@ const Node = ({
 
   // Determine colors based on active state
   const color =
-    isActive || isCompleted ? "#FFD700" : isRoot ? "#FFDA4D" : "#666666";
-  const emissiveColor = isActive || isCompleted ? color : "#000000";
-  const emissiveIntensity = isActive ? 1 : isCompleted ? 0.8 : 0;
+    isActive || isCompleted
+      ? "#FFD700"
+      : isRoot
+      ? "#FFDA4D"
+      : symbolType === "dot"
+      ? "#A0A0A0"
+      : "#909090";
+
+  const emissiveColor =
+    isActive || isCompleted ? "#FFD700" : isRoot ? "#FFDA4D" : "#303030";
+
+  const emissiveIntensity = isActive
+    ? 1
+    : isCompleted
+    ? 0.8
+    : isRoot
+    ? 0.5
+    : 0.2;
 
   // Determine size and shape based on symbol type
   const geometry = useMemo(() => {
@@ -48,75 +63,69 @@ const Node = ({
     }
   }, [symbolType, scale]);
 
-  // Glow geometry
-  const glowGeometry = useMemo(() => {
-    if (symbolType === "dot") {
-      return (
-        <cylinderGeometry args={[0.4 * scale, 0.4 * scale, 0.3 * scale, 32]} />
-      );
-    } else if (symbolType === "dash") {
-      return <boxGeometry args={[1 * scale, 0.3 * scale, 0.4 * scale]} />;
-    } else {
-      // Root node
-      return <sphereGeometry args={[0.7 * scale, 32, 32]} />;
-    }
-  }, [symbolType, scale]);
-
+  // Pulsation effect for active nodes
   useFrame((state) => {
-    if (meshRef.current) {
-      // Subtle floating animation
-      meshRef.current.position.y =
-        position[1] + Math.sin(state.clock.elapsedTime * 0.8) * 0.05;
-    }
+    if (meshRef.current && glowRef.current) {
+      if (isActive) {
+        const time = state.clock.getElapsedTime();
+        const pulse = Math.sin(time * 4) * 0.1 + 0.9;
+        meshRef.current.scale.set(pulse, pulse, pulse);
+        glowRef.current.scale.set(pulse * 1.2, pulse * 1.2, pulse * 1.2);
 
-    if (glowRef.current && (isActive || isCompleted)) {
-      // Pulse glow for active nodes
-      const pulse = 1 + Math.sin(state.clock.elapsedTime * 3) * 0.2;
-      glowRef.current.scale.set(pulse, pulse, pulse);
+        // Increase intensity during pulse
+        if (meshRef.current.material instanceof THREE.MeshStandardMaterial) {
+          meshRef.current.material.emissiveIntensity =
+            emissiveIntensity * (pulse + 0.2);
+        }
+      } else if (isCompleted) {
+        // Static glow for completed nodes
+        if (meshRef.current.material instanceof THREE.MeshStandardMaterial) {
+          meshRef.current.material.emissiveIntensity = emissiveIntensity;
+        }
+      }
     }
   });
 
   return (
     <group position={position}>
-      {/* Hyperrealistic metallic effect */}
-      <mesh
-        ref={glowRef}
-        position={[0, 0, 0]}
-        rotation={symbolType !== "dash" ? [Math.PI / 2, 0, 0] : undefined}
-      >
-        {glowGeometry}
-        <meshBasicMaterial
-          color={isActive ? "#FFDA4D" : isCompleted ? "#FFB700" : "#333333"}
-          transparent
-          opacity={isActive ? 0.5 : isCompleted ? 0.3 : 0.15}
-        />
-      </mesh>
-
-      {/* Main node with enhanced materials */}
+      {/* The node itself */}
       <mesh
         ref={meshRef}
-        position={[0, 0, 0]}
-        rotation={symbolType !== "dash" ? [Math.PI / 2, 0, 0] : undefined}
+        rotation={symbolType === "dot" ? [Math.PI / 2, 0, 0] : [0, 0, 0]}
       >
         {geometry}
         <meshStandardMaterial
           color={color}
+          metalness={0.8}
+          roughness={0.2}
           emissive={emissiveColor}
           emissiveIntensity={emissiveIntensity}
-          metalness={0.9}
-          roughness={0.1}
-          envMapIntensity={1.5}
         />
       </mesh>
 
-      {/* Letter label */}
+      {/* Glow effect for the node */}
+      <mesh
+        ref={glowRef}
+        scale={[1.2, 1.2, 1.2]}
+        rotation={symbolType === "dot" ? [Math.PI / 2, 0, 0] : [0, 0, 0]}
+      >
+        {geometry}
+        <meshBasicMaterial
+          color={color}
+          transparent={true}
+          opacity={isActive ? 0.4 : isCompleted ? 0.3 : 0.1}
+        />
+      </mesh>
+
+      {/* Letter label if provided */}
       {letter && (
         <Text
-          position={[0, 0, 0.3]}
-          fontSize={0.3 * scale}
-          color="#FFFFFF"
+          position={[0, symbolType === "dot" ? -0.3 : -0.3, 0]}
+          fontSize={0.35}
+          color={isActive || isCompleted ? "#FFFFFF" : "#AAAAAA"}
           anchorX="center"
           anchorY="middle"
+          font="/fonts/Inter-Bold.woff"
           outlineWidth={0.01}
           outlineColor="#000000"
         >
@@ -139,66 +148,34 @@ const NeonPipe = ({
   isActive?: boolean;
   isCompleted?: boolean;
 }) => {
-  // Create a right-angled path using three points
-  // Extract only the coordinates we need
-  const startY = start[1];
-  const endX = end[0];
+  const points = useMemo(() => {
+    const startVec = new THREE.Vector3(...start);
+    const endVec = new THREE.Vector3(...end);
+    return [startVec, endVec];
+  }, [start, end]);
 
-  // Create midpoint with a right angle
-  const midPoint: [number, number, number] = [endX, startY, end[2]];
-
-  // Determine the color
-  const color = isActive ? "#FFDA4D" : isCompleted ? "#FFB700" : "#333333";
-  const glowColor = isActive ? "#FFDA4D" : isCompleted ? "#FFB700" : "#444444";
-  const width = isActive ? 2.5 : isCompleted ? 2 : 1.5;
-  const glowWidth = isActive ? 5 : isCompleted ? 4 : 0;
-  const opacity = isActive ? 0.5 : isCompleted ? 0.3 : 0.1;
-
+  const baseColor = isActive ? "#FFD700" : isCompleted ? "#E5C100" : "#555555";
+  const lineWidth = isActive ? 3 : isCompleted ? 2.5 : 1.5;
+  const lineOpacity = isActive ? 1 : isCompleted ? 0.9 : 0.6;
+  
   return (
     <>
-      {/* First segment (horizontal) - Outer glow */}
+      {/* Main line */}
       <Line
-        points={[start, midPoint]}
-        color={glowColor}
-        transparent
-        opacity={opacity}
-        lineWidth={width + 2}
+        points={points}
+        color={baseColor}
+        lineWidth={lineWidth}
+        opacity={lineOpacity}
       />
 
-      {/* First segment (horizontal) - Inner line */}
-      <Line points={[start, midPoint]} color={color} lineWidth={width} />
-
-      {/* Second segment (vertical) - Outer glow */}
+      {/* Glow effect */}
       <Line
-        points={[midPoint, end]}
-        color={glowColor}
+        points={points}
+        color={baseColor}
+        lineWidth={lineWidth * 2}
         transparent
-        opacity={opacity}
-        lineWidth={width + 2}
+        opacity={isActive ? 0.3 : isCompleted ? 0.2 : 0.05}
       />
-
-      {/* Second segment (vertical) - Inner line */}
-      <Line points={[midPoint, end]} color={color} lineWidth={width} />
-
-      {/* Extra glow effect for active connections */}
-      {(isActive || isCompleted) && (
-        <>
-          <Line
-            points={[start, midPoint]}
-            color={glowColor}
-            transparent
-            opacity={opacity * 0.8}
-            lineWidth={glowWidth}
-          />
-          <Line
-            points={[midPoint, end]}
-            color={glowColor}
-            transparent
-            opacity={opacity * 0.8}
-            lineWidth={glowWidth}
-          />
-        </>
-      )}
     </>
   );
 };
@@ -381,47 +358,25 @@ const EntryArrow = ({
 // Background panel with grid lines for cyber look
 const Background = () => {
   return (
-    <group>
-      {/* Main background */}
-      <mesh position={[0, 0, -12]} receiveShadow>
-        <planeGeometry args={[50, 40]} />
-        <meshStandardMaterial
-          color="#121212"
-          metalness={0.8}
-          roughness={0.4}
-          envMapIntensity={0.5}
-        />
+    <>
+      {/* Ambient light for general illumination */}
+      <ambientLight intensity={0.5} />
+
+      {/* Main directional light */}
+      <directionalLight position={[5, 10, 5]} intensity={1.2} castShadow />
+
+      {/* Fill light from opposite direction */}
+      <directionalLight position={[-5, 5, -5]} intensity={0.7} />
+
+      {/* Bottom light for added dimension */}
+      <pointLight position={[0, -10, 0]} intensity={0.5} color="#4A4A6A" />
+
+      {/* Subtle background gradient */}
+      <mesh position={[0, 0, -15]}>
+        <planeGeometry args={[100, 100]} />
+        <meshBasicMaterial color="#0F1524" transparent opacity={0.8} />
       </mesh>
-
-      {/* Grid lines */}
-      {Array.from({ length: 20 }).map((_, i) => (
-        <Line
-          key={`horizontal-${i}`}
-          points={[
-            [-25, -20 + i * 2, -11.9],
-            [25, -20 + i * 2, -11.9],
-          ]}
-          color="#333333"
-          transparent
-          opacity={0.3}
-          lineWidth={1}
-        />
-      ))}
-
-      {Array.from({ length: 20 }).map((_, i) => (
-        <Line
-          key={`vertical-${i}`}
-          points={[
-            [-25 + i * 2.5, -20, -11.9],
-            [-25 + i * 2.5, 20, -11.9],
-          ]}
-          color="#333333"
-          transparent
-          opacity={0.3}
-          lineWidth={1}
-        />
-      ))}
-    </group>
+    </>
   );
 };
 
@@ -468,57 +423,31 @@ const MorseTreeVisualization = ({
   letterCompleted?: boolean;
 }) => {
   return (
-    <div className="w-full h-[60vh] bg-neutral-900 rounded-lg overflow-hidden">
-      <Canvas
-        shadows
-        gl={{
-          antialias: true,
-          toneMapping: THREE.ACESFilmicToneMapping,
-          toneMappingExposure: 1.5,
-        }}
-        camera={{ fov: 45 }}
-      >
-        <color attach="background" args={["#111111"]} />
-
+    <div className="h-[600px] rounded-lg overflow-hidden shadow-xl border border-slate-700">
+      <Canvas shadows dpr={[1, 2]} camera={{ position: [0, 0, 12], fov: 50 }}>
+        <color attach="background" args={["#10131f"]} />
         <CameraController />
-
-        {/* Enhanced scene lighting for realistic look */}
-        <ambientLight intensity={0.3} />
-        <pointLight position={[10, 10, 10]} intensity={0.8} castShadow />
-        <pointLight position={[-10, -10, 5]} intensity={0.4} />
-        <spotLight
-          position={[0, 15, 5]}
-          angle={0.5}
-          penumbra={0.8}
-          intensity={1.2}
-          castShadow
-          shadow-mapSize={[1024, 1024]}
-        />
-
-        {/* Scene fog for depth */}
-        <fog attach="fog" args={["#000000", 12, 40]} />
-
-        {/* Background with grid */}
         <Background />
 
-        {/* Entry arrow at the top */}
+        {/* Entry arrow pointing to the root of the tree */}
         <EntryArrow
-          isActive={isPlaying && !letterCompleted}
-          isCompleted={letterCompleted}
+          isActive={isPlaying && currentPath.length === 0}
+          isCompleted={isPlaying && currentPath.length > 0 && letterCompleted}
         />
 
-        {/* Morse tree visualization */}
+        {/* Render the morse tree */}
         <TreeVisualization
           root={morseTree}
           activePath={currentPath}
           letterCompleted={letterCompleted}
         />
 
-        {/* Enhanced post-processing effects */}
+        {/* Post-processing effects for glow */}
         <EffectComposer>
           <Bloom
             luminanceThreshold={0.2}
             luminanceSmoothing={0.9}
+            height={300}
             intensity={0.8}
           />
         </EffectComposer>

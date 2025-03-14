@@ -1,15 +1,9 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import {
-  textToMorse,
-  getLetterPath,
-  morseTree,
-  MorseSymbol,
-  morseMap,
-} from "@/lib/morse";
-import { generateMorseAudio, clearMorseAudio } from "@/lib/audio";
-import MorseTreeVisualization from "@/components/MorseTreeVisualization";
+import { useState, useEffect } from "react";
+import { morseTree, MorseSymbol, morseMap } from "@/lib/morse";
+import { clearMorseAudio } from "@/lib/audio";
+import { MorseTreeVisualization } from "@/components/morse";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -52,20 +46,24 @@ export default function Home() {
     setLetterCompleted(false);
     setCurrentPath([]);
 
-    generateMorseAudio(
-      code,
-      (index, symbol) => {
-        // Update the current path for visualization as each symbol plays
-        setCurrentPath((prev) => {
-          const newPath = [...prev];
-          if (newPath.length <= index) {
-            newPath.push(symbol);
-          }
-          return newPath;
-        });
-      },
-      () => {
+    // We'll use our dedicated audio component in morse/audio/MorseAudio.tsx
+    // for actual playback. This is just to simulate the sequence.
+
+    // Parse the morse code into symbols
+    const symbols = code
+      .split("")
+      .filter((s) => s === "." || s === "-") as MorseSymbol[];
+
+    // Play each symbol with a delay
+    let currentIndex = 0;
+    const interval = setInterval(() => {
+      if (currentIndex < symbols.length) {
+        const currentSymbols = symbols.slice(0, currentIndex + 1);
+        setCurrentPath(currentSymbols);
+        currentIndex++;
+      } else {
         // When the letter is complete, mark it as completed for visual cue
+        clearInterval(interval);
         setLetterCompleted(true);
 
         // Then move to the next letter or finish after a delay
@@ -85,7 +83,10 @@ export default function Home() {
           });
         }, 800); // Longer delay to see the completed path
       }
-    );
+    }, 500); // Half second between symbols for demo purposes
+
+    // Clean up interval if component unmounts
+    return () => clearInterval(interval);
   };
 
   // Handle playing the entire text input
@@ -141,6 +142,12 @@ export default function Home() {
                 placeholder="Enter text to convert to Morse code"
                 className="bg-slate-900 border-slate-700 text-white"
                 disabled={isPlaying}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && inputText.trim() && !isPlaying) {
+                    e.preventDefault();
+                    handlePlay();
+                  }
+                }}
               />
               <Button
                 onClick={handlePlay}
@@ -208,6 +215,27 @@ export default function Home() {
           </CardFooter>
         </Card>
       </div>
+      <footer className="mt-12 py-6 border-t border-slate-700 text-center text-slate-400">
+        <div className="flex justify-center items-center gap-6 flex-wrap">
+          <a
+            href="https://mewc.info"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-amber-400 transition-colors"
+          >
+            mewc.info
+          </a>
+          <a
+            href="https://x.com/the_mewc"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-amber-400 transition-colors"
+          >
+            x.com/the_mewc
+          </a>
+          <span className="text-slate-500">vibed my mewc</span>
+        </div>
+      </footer>
     </div>
   );
 }
