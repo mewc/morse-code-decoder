@@ -1,18 +1,9 @@
 "use client";
 
-import { useRef, useState, useEffect, useMemo } from "react";
-import { Canvas, useFrame, useThree, extend } from "@react-three/fiber";
-import {
-  OrbitControls,
-  Text,
-  Line,
-  useTexture,
-  MeshReflectorMaterial,
-  MeshTransmissionMaterial,
-  Effects,
-  EffectComposer,
-  Bloom,
-} from "@react-three/drei";
+import { useRef, useEffect, useMemo } from "react";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import { OrbitControls, Text, Line } from "@react-three/drei";
+import { EffectComposer, Bloom } from "@react-three/postprocessing";
 import * as THREE from "three";
 import { MorseNode, MorseSymbol } from "@/lib/morse";
 
@@ -147,12 +138,12 @@ const NodeConnection = ({
   end: [number, number, number];
   isActive?: boolean;
 }) => {
-  const ref = useRef<any>();
+  const ref = useRef<THREE.LineBasicMaterial>(null);
 
   useFrame((state) => {
     if (ref.current && isActive) {
       // Animated color for active connections
-      ref.current.material.color.setHSL(
+      ref.current.color.setHSL(
         0.14,
         1,
         0.5 + Math.sin(state.clock.elapsedTime * 3) * 0.1
@@ -282,12 +273,12 @@ const TreeVisualization = ({
 
 // Entry arrow at the top of the diagram
 const EntryArrow = ({ isActive = false }: { isActive?: boolean }) => {
-  const ref = useRef<any>();
+  const ref = useRef<THREE.LineBasicMaterial>(null);
 
   useFrame((state) => {
     if (ref.current && isActive) {
       // Animated color for active entry
-      ref.current.material.color.setHSL(
+      ref.current.color.setHSL(
         0.14,
         1,
         0.5 + Math.sin(state.clock.elapsedTime * 3) * 0.1
@@ -357,7 +348,7 @@ const Background = () => {
 // Camera controller with better defaults
 const CameraController = () => {
   const { camera, size } = useThree();
-  const controls = useRef<any>();
+  const controls = useRef<OrbitControls>(null);
 
   useEffect(() => {
     // Set initial camera position
