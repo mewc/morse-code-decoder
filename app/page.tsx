@@ -27,6 +27,7 @@ export default function Home() {
   const [currentPath, setCurrentPath] = useState<MorseSymbol[]>([]);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [lettersQueue, setLettersQueue] = useState<string[]>([]);
+  const [letterCompleted, setLetterCompleted] = useState<boolean>(false);
 
   // Clear any existing audio on component unmount
   useEffect(() => {
@@ -48,6 +49,8 @@ export default function Home() {
     setCurrentLetter(upperLetter);
     setMorseCode(code);
     setIsPlaying(true);
+    setLetterCompleted(false);
+    setCurrentPath([]);
 
     generateMorseAudio(
       code,
@@ -62,10 +65,14 @@ export default function Home() {
         });
       },
       () => {
-        // When the letter is complete, move to the next letter or finish
+        // When the letter is complete, mark it as completed for visual cue
+        setLetterCompleted(true);
+
+        // Then move to the next letter or finish after a delay
         setTimeout(() => {
           setIsPlaying(false);
           setCurrentPath([]);
+          setLetterCompleted(false);
 
           // Process the next letter in the queue
           setLettersQueue((prev) => {
@@ -76,7 +83,7 @@ export default function Home() {
             }
             return newQueue;
           });
-        }, 500);
+        }, 800); // Longer delay to see the completed path
       }
     );
   };
@@ -87,6 +94,7 @@ export default function Home() {
 
     clearMorseAudio();
     setCurrentPath([]);
+    setLetterCompleted(false);
 
     // Split the input text into individual characters
     const letters = inputText.split("");
@@ -105,6 +113,7 @@ export default function Home() {
     setIsPlaying(false);
     setCurrentPath([]);
     setLettersQueue([]);
+    setLetterCompleted(false);
   };
 
   return (
@@ -178,6 +187,7 @@ export default function Home() {
           morseTree={morseTree}
           currentPath={currentPath}
           isPlaying={isPlaying}
+          letterCompleted={letterCompleted}
         />
 
         <Card className="bg-slate-800 border-slate-700">

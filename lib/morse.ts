@@ -115,6 +115,25 @@ export const textToMorse = (text: string): string => {
     .join(" ");
 };
 
+// Alias for textToMorse to match function name in MorsePlayer
+export const encodeMorse = textToMorse;
+
+// Decode morse code to text
+export const decodeMorse = (morseCode: string): string => {
+  const morseToLetter = Object.entries(morseMap).reduce(
+    (acc, [letter, code]) => {
+      acc[code] = letter;
+      return acc;
+    },
+    {} as Record<string, string>
+  );
+
+  return morseCode
+    .split(" ")
+    .map((code) => morseToLetter[code] || "")
+    .join("");
+};
+
 // Traverse the morse tree to find a letter
 export const traverseMorseTree = (code: MorseSymbol[]): string | null => {
   let node = morseTree;

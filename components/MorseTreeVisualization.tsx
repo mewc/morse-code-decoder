@@ -12,6 +12,7 @@ const Node = ({
   position,
   letter,
   isActive = false,
+  isCompleted = false,
   scale = 1,
   isRoot = false,
   symbolType = "dot", // 'dot', 'dash', or 'root'
@@ -19,6 +20,7 @@ const Node = ({
   position: [number, number, number];
   letter?: string;
   isActive?: boolean;
+  isCompleted?: boolean;
   scale?: number;
   isRoot?: boolean;
   symbolType?: "dot" | "dash" | "root";
@@ -27,9 +29,10 @@ const Node = ({
   const glowRef = useRef<THREE.Mesh>(null);
 
   // Determine colors based on active state
-  const color = isActive ? "#FFD700" : isRoot ? "#FFDA4D" : "#666666";
-  const emissiveColor = isActive ? color : "#000000";
-  const emissiveIntensity = isActive ? 1 : 0;
+  const color =
+    isActive || isCompleted ? "#FFD700" : isRoot ? "#FFDA4D" : "#666666";
+  const emissiveColor = isActive || isCompleted ? color : "#000000";
+  const emissiveIntensity = isActive ? 1 : isCompleted ? 0.8 : 0;
 
   // Determine size and shape based on symbol type
   const geometry = useMemo(() => {
@@ -40,10 +43,8 @@ const Node = ({
     } else if (symbolType === "dash") {
       return <boxGeometry args={[0.8 * scale, 0.2 * scale, 0.3 * scale]} />;
     } else {
-      // Root node
-      return (
-        <cylinderGeometry args={[0.5 * scale, 0.5 * scale, 0.2 * scale, 32]} />
-      );
+      // Root node - use a sphere for better visual
+      return <sphereGeometry args={[0.5 * scale, 32, 32]} />;
     }
   }, [symbolType, scale]);
 
@@ -57,9 +58,7 @@ const Node = ({
       return <boxGeometry args={[1 * scale, 0.3 * scale, 0.4 * scale]} />;
     } else {
       // Root node
-      return (
-        <cylinderGeometry args={[0.7 * scale, 0.7 * scale, 0.3 * scale, 32]} />
-      );
+      return <sphereGeometry args={[0.7 * scale, 32, 32]} />;
     }
   }, [symbolType, scale]);
 
@@ -70,7 +69,7 @@ const Node = ({
         position[1] + Math.sin(state.clock.elapsedTime * 0.8) * 0.05;
     }
 
-    if (glowRef.current && isActive) {
+    if (glowRef.current && (isActive || isCompleted)) {
       // Pulse glow for active nodes
       const pulse = 1 + Math.sin(state.clock.elapsedTime * 3) * 0.2;
       glowRef.current.scale.set(pulse, pulse, pulse);
@@ -79,7 +78,7 @@ const Node = ({
 
   return (
     <group position={position}>
-      {/* Glow effect */}
+      {/* Hyperrealistic metallic effect */}
       <mesh
         ref={glowRef}
         position={[0, 0, 0]}
@@ -87,13 +86,13 @@ const Node = ({
       >
         {glowGeometry}
         <meshBasicMaterial
-          color={isActive ? "#FFDA4D" : "#333333"}
+          color={isActive ? "#FFDA4D" : isCompleted ? "#FFB700" : "#333333"}
           transparent
-          opacity={isActive ? 0.5 : 0.15}
+          opacity={isActive ? 0.5 : isCompleted ? 0.3 : 0.15}
         />
       </mesh>
 
-      {/* Main node */}
+      {/* Main node with enhanced materials */}
       <mesh
         ref={meshRef}
         position={[0, 0, 0]}
@@ -128,65 +127,96 @@ const Node = ({
   );
 };
 
-// Line component for connecting nodes
-const NodeConnection = ({
+// NeonPipe component for creating right-angled, neon-like connections
+const NeonPipe = ({
   start,
   end,
   isActive = false,
+  isCompleted = false,
 }: {
   start: [number, number, number];
   end: [number, number, number];
   isActive?: boolean;
+  isCompleted?: boolean;
 }) => {
-  const ref = useRef<THREE.LineBasicMaterial>(null);
+  // Create a right-angled path using three points
+  // Extract only the coordinates we need
+  const startY = start[1];
+  const endX = end[0];
 
-  useFrame((state) => {
-    if (ref.current && isActive) {
-      // Animated color for active connections
-      ref.current.color.setHSL(
-        0.14,
-        1,
-        0.5 + Math.sin(state.clock.elapsedTime * 3) * 0.1
-      );
-    }
-  });
+  // Create midpoint with a right angle
+  const midPoint: [number, number, number] = [endX, startY, end[2]];
+
+  // Determine the color
+  const color = isActive ? "#FFDA4D" : isCompleted ? "#FFB700" : "#333333";
+  const glowColor = isActive ? "#FFDA4D" : isCompleted ? "#FFB700" : "#444444";
+  const width = isActive ? 2.5 : isCompleted ? 2 : 1.5;
+  const glowWidth = isActive ? 5 : isCompleted ? 4 : 0;
+  const opacity = isActive ? 0.5 : isCompleted ? 0.3 : 0.1;
 
   return (
     <>
-      {/* Main connection line */}
+      {/* First segment (horizontal) - Outer glow */}
       <Line
-        ref={ref}
-        points={[start, end]}
-        color={isActive ? "#FFDA4D" : "#444444"}
-        lineWidth={isActive ? 2.5 : 1.5}
+        points={[start, midPoint]}
+        color={glowColor}
+        transparent
+        opacity={opacity}
+        lineWidth={width + 2}
       />
 
-      {/* Glow effect for active connections */}
-      {isActive && (
-        <Line
-          points={[start, end]}
-          color="#FFDA4D"
-          transparent
-          opacity={0.3}
-          lineWidth={5}
-        />
+      {/* First segment (horizontal) - Inner line */}
+      <Line points={[start, midPoint]} color={color} lineWidth={width} />
+
+      {/* Second segment (vertical) - Outer glow */}
+      <Line
+        points={[midPoint, end]}
+        color={glowColor}
+        transparent
+        opacity={opacity}
+        lineWidth={width + 2}
+      />
+
+      {/* Second segment (vertical) - Inner line */}
+      <Line points={[midPoint, end]} color={color} lineWidth={width} />
+
+      {/* Extra glow effect for active connections */}
+      {(isActive || isCompleted) && (
+        <>
+          <Line
+            points={[start, midPoint]}
+            color={glowColor}
+            transparent
+            opacity={opacity * 0.8}
+            lineWidth={glowWidth}
+          />
+          <Line
+            points={[midPoint, end]}
+            color={glowColor}
+            transparent
+            opacity={opacity * 0.8}
+            lineWidth={glowWidth}
+          />
+        </>
       )}
     </>
   );
 };
 
-// Tree visualization using recursion
+// Tree visualization using recursion with flow-chart style
 const TreeVisualization = ({
   root,
   activePath = [],
+  letterCompleted = false,
   basePosition = [0, 4, 0],
   depth = 0,
-  horizontalSpacing = 2,
-  verticalSpacing = 1.5,
+  horizontalSpacing = 2.5,
+  verticalSpacing = 1.8,
   pathSoFar = "",
 }: {
   root: MorseNode;
   activePath?: MorseSymbol[];
+  letterCompleted?: boolean;
   basePosition?: [number, number, number];
   depth?: number;
   horizontalSpacing?: number;
@@ -196,8 +226,16 @@ const TreeVisualization = ({
   const [x, y, z] = basePosition;
   const isActive = depth === activePath.length;
 
+  // Check if this node is on the current active path by comparing the path so far
+  // with the active path at each level - should match exactly
+  const isOnActivePath =
+    depth <= activePath.length &&
+    pathSoFar === activePath.slice(0, depth).join("");
+
+  const isCompleted = letterCompleted && isOnActivePath;
+
   // Calculate spread factor to widen the tree as we go deeper
-  const spreadFactor = Math.pow(1.5, depth);
+  const spreadFactor = Math.pow(1.3, depth);
   const currentHorizontalSpacing = horizontalSpacing * spreadFactor;
 
   // Determine symbol type from path
@@ -215,6 +253,7 @@ const TreeVisualization = ({
         position={[x, y, z]}
         letter={root.letter}
         isActive={isActive}
+        isCompleted={isCompleted}
         scale={depth === 0 ? 1.5 : 1}
         isRoot={depth === 0}
         symbolType={getSymbolType()}
@@ -223,14 +262,18 @@ const TreeVisualization = ({
       {/* Dot branch (left) */}
       {root.dot && (
         <>
-          <NodeConnection
+          <NeonPipe
             start={[x, y, z]}
             end={[x - currentHorizontalSpacing, y - verticalSpacing, z]}
             isActive={activePath[depth] === "."}
+            isCompleted={
+              letterCompleted && activePath[depth] === "." && isOnActivePath
+            }
           />
           <TreeVisualization
             root={root.dot}
             activePath={activePath}
+            letterCompleted={letterCompleted}
             basePosition={[
               x - currentHorizontalSpacing,
               y - verticalSpacing,
@@ -247,14 +290,18 @@ const TreeVisualization = ({
       {/* Dash branch (right) */}
       {root.dash && (
         <>
-          <NodeConnection
+          <NeonPipe
             start={[x, y, z]}
             end={[x + currentHorizontalSpacing, y - verticalSpacing, z]}
             isActive={activePath[depth] === "-"}
+            isCompleted={
+              letterCompleted && activePath[depth] === "-" && isOnActivePath
+            }
           />
           <TreeVisualization
             root={root.dash}
             activePath={activePath}
+            letterCompleted={letterCompleted}
             basePosition={[
               x + currentHorizontalSpacing,
               y - verticalSpacing,
@@ -272,83 +319,117 @@ const TreeVisualization = ({
 };
 
 // Entry arrow at the top of the diagram
-const EntryArrow = ({ isActive = false }: { isActive?: boolean }) => {
-  const ref = useRef<THREE.LineBasicMaterial>(null);
-
-  useFrame((state) => {
-    if (ref.current && isActive) {
-      // Animated color for active entry
-      ref.current.color.setHSL(
-        0.14,
-        1,
-        0.5 + Math.sin(state.clock.elapsedTime * 3) * 0.1
-      );
-    }
-  });
-
+const EntryArrow = ({
+  isActive = false,
+  isCompleted = false,
+}: {
+  isActive?: boolean;
+  isCompleted?: boolean;
+}) => {
   // Create an arrow-like shape
+  const color = isActive ? "#FFDA4D" : isCompleted ? "#FFB700" : "#555555";
+  const glowColor = isActive ? "#FFDA4D" : isCompleted ? "#FFB700" : "#222222";
+  const emissiveIntensity = isActive ? 0.8 : isCompleted ? 0.6 : 0;
+
   return (
     <>
       {/* Main line */}
       <Line
-        ref={ref}
         points={[
           [0, 7, 0],
           [0, 4.5, 0],
         ]}
-        color={isActive ? "#FFDA4D" : "#555555"}
-        lineWidth={isActive ? 3 : 2}
+        color={color}
+        lineWidth={isActive || isCompleted ? 3 : 2}
+      />
+
+      {/* Glow effect */}
+      <Line
+        points={[
+          [0, 7, 0],
+          [0, 4.5, 0],
+        ]}
+        color={glowColor}
+        transparent
+        opacity={isActive || isCompleted ? 0.3 : 0.1}
+        lineWidth={isActive || isCompleted ? 6 : 3}
       />
 
       {/* Arrow head */}
       <mesh position={[0, 4.2, 0]} rotation={[0, 0, Math.PI]}>
         <coneGeometry args={[0.2, 0.5, 8]} />
         <meshStandardMaterial
-          color={isActive ? "#FFDA4D" : "#555555"}
-          emissive={isActive ? "#FFDA4D" : "#000000"}
-          emissiveIntensity={isActive ? 0.8 : 0}
+          color={color}
+          emissive={color}
+          emissiveIntensity={emissiveIntensity}
           metalness={0.8}
           roughness={0.2}
         />
       </mesh>
 
       {/* Glow effect for active entry */}
-      {isActive && (
-        <>
-          <Line
-            points={[
-              [0, 7, 0],
-              [0, 4.5, 0],
-            ]}
-            color="#FFDA4D"
-            transparent
-            opacity={0.3}
-            lineWidth={6}
-          />
-          <mesh position={[0, 4.2, 0]} rotation={[0, 0, Math.PI]}>
-            <coneGeometry args={[0.3, 0.7, 8]} />
-            <meshBasicMaterial color="#FFDA4D" transparent opacity={0.3} />
-          </mesh>
-        </>
+      {(isActive || isCompleted) && (
+        <mesh position={[0, 4.2, 0]} rotation={[0, 0, Math.PI]}>
+          <coneGeometry args={[0.3, 0.7, 8]} />
+          <meshBasicMaterial color={glowColor} transparent opacity={0.3} />
+        </mesh>
       )}
     </>
   );
 };
 
-// Background panel with metallic texture
+// Background panel with grid lines for cyber look
 const Background = () => {
   return (
-    <mesh position={[0, 0, -12]} receiveShadow>
-      <planeGeometry args={[50, 40]} />
-      <meshStandardMaterial color="#121212" metalness={0.8} roughness={0.4} />
-    </mesh>
+    <group>
+      {/* Main background */}
+      <mesh position={[0, 0, -12]} receiveShadow>
+        <planeGeometry args={[50, 40]} />
+        <meshStandardMaterial
+          color="#121212"
+          metalness={0.8}
+          roughness={0.4}
+          envMapIntensity={0.5}
+        />
+      </mesh>
+
+      {/* Grid lines */}
+      {Array.from({ length: 20 }).map((_, i) => (
+        <Line
+          key={`horizontal-${i}`}
+          points={[
+            [-25, -20 + i * 2, -11.9],
+            [25, -20 + i * 2, -11.9],
+          ]}
+          color="#333333"
+          transparent
+          opacity={0.3}
+          lineWidth={1}
+        />
+      ))}
+
+      {Array.from({ length: 20 }).map((_, i) => (
+        <Line
+          key={`vertical-${i}`}
+          points={[
+            [-25 + i * 2.5, -20, -11.9],
+            [-25 + i * 2.5, 20, -11.9],
+          ]}
+          color="#333333"
+          transparent
+          opacity={0.3}
+          lineWidth={1}
+        />
+      ))}
+    </group>
   );
 };
 
 // Camera controller with better defaults
 const CameraController = () => {
   const { camera, size } = useThree();
-  const controls = useRef<OrbitControls>(null);
+  // Skip the type annotation for the ref to avoid type errors
+  const controls = useRef(null);
 
   useEffect(() => {
     // Set initial camera position
@@ -379,10 +460,12 @@ const MorseTreeVisualization = ({
   morseTree,
   currentPath = [],
   isPlaying = false,
+  letterCompleted = false,
 }: {
   morseTree: MorseNode;
   currentPath?: MorseSymbol[];
   isPlaying?: boolean;
+  letterCompleted?: boolean;
 }) => {
   return (
     <div className="w-full h-[60vh] bg-neutral-900 rounded-lg overflow-hidden">
@@ -399,7 +482,7 @@ const MorseTreeVisualization = ({
 
         <CameraController />
 
-        {/* Scene lighting */}
+        {/* Enhanced scene lighting for realistic look */}
         <ambientLight intensity={0.3} />
         <pointLight position={[10, 10, 10]} intensity={0.8} castShadow />
         <pointLight position={[-10, -10, 5]} intensity={0.4} />
@@ -415,16 +498,23 @@ const MorseTreeVisualization = ({
         {/* Scene fog for depth */}
         <fog attach="fog" args={["#000000", 12, 40]} />
 
-        {/* Background */}
+        {/* Background with grid */}
         <Background />
 
         {/* Entry arrow at the top */}
-        <EntryArrow isActive={isPlaying} />
+        <EntryArrow
+          isActive={isPlaying && !letterCompleted}
+          isCompleted={letterCompleted}
+        />
 
         {/* Morse tree visualization */}
-        <TreeVisualization root={morseTree} activePath={currentPath} />
+        <TreeVisualization
+          root={morseTree}
+          activePath={currentPath}
+          letterCompleted={letterCompleted}
+        />
 
-        {/* Post-processing effects */}
+        {/* Enhanced post-processing effects */}
         <EffectComposer>
           <Bloom
             luminanceThreshold={0.2}
