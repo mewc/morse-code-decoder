@@ -36,6 +36,9 @@ const MorseTreeVisualization = ({
     [isPlaying, onPlayLetter]
   );
 
+  // Check if we're at the start of the path (first entry)
+  const isAtPathStart = isPlaying && currentPath.length === 0;
+
   return (
     <div className="h-[800px] rounded-lg overflow-hidden shadow-xl border border-slate-700">
       <Canvas
@@ -54,9 +57,9 @@ const MorseTreeVisualization = ({
         {/* Background with improved lighting */}
         <Background />
 
-        {/* Entry arrow pointing to the root of the tree */}
+        {/* Entry arrow pointing to the root of the tree - only active at path start */}
         <EntryArrow
-          isActive={isPlaying && currentPath.length === 0}
+          isActive={isAtPathStart}
           isCompleted={isPlaying && currentPath.length > 0 && letterCompleted}
         />
 

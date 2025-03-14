@@ -27,7 +27,9 @@ const Node = ({
 }) => {
   const meshRef = useRef<THREE.Mesh>(null);
   const glowRef = useRef<THREE.Mesh>(null);
-  const orbitRef = useRef<THREE.Group>(null);
+  const orbitRef1 = useRef<THREE.Group>(null);
+  const orbitRef2 = useRef<THREE.Group>(null);
+  const orbitRef3 = useRef<THREE.Group>(null);
   const [isHovered, setIsHovered] = useState(false);
 
   // Determine colors based on active state and symbol type
@@ -35,20 +37,30 @@ const Node = ({
     isActive || isCompleted
       ? "#FFD700"
       : isRoot
-      ? "#FFDA4D"
+      ? isActive
+        ? "#FFD700"
+        : "#FFDA4D" // Root is only bright yellow when active
       : symbolType === "dot"
       ? "#A0A0A0"
       : "#909090";
 
   const emissiveColor =
-    isActive || isCompleted ? "#FFD700" : isRoot ? "#FFDA4D" : "#303030";
+    isActive || isCompleted
+      ? "#FFD700"
+      : isRoot
+      ? isActive
+        ? "#FFD700"
+        : "#FFDA4D"
+      : "#303030";
 
   const emissiveIntensity = isActive
     ? 1
     : isCompleted
     ? 0.8
     : isRoot
-    ? 0.5
+    ? isActive
+      ? 1
+      : 0.5
     : 0.2;
 
   // Determine geometry based on the symbol type
@@ -67,27 +79,35 @@ const Node = ({
     }
   }, [symbolType, scale]);
 
-  // Orbital ring geometry
-  const orbitalRing = useMemo(() => {
-    const radius = symbolType === "root" ? 0.7 * scale : 0.5 * scale;
-    const curve = new THREE.EllipseCurve(
-      0,
-      0, // Center x, y
-      radius,
-      radius, // xRadius, yRadius
-      0,
-      2 * Math.PI, // startAngle, endAngle
-      false, // clockwise
-      0 // rotation
-    );
+  // Create particle points for orbital rings
+  const createParticleRing = (
+    radius: number,
+    numParticles: number,
+    offset: number = 0
+  ) => {
+    const particles: THREE.Vector3[] = [];
+    for (let i = 0; i < numParticles; i++) {
+      const angle = (i / numParticles) * Math.PI * 2 + offset;
+      const x = Math.cos(angle) * radius;
+      const y = Math.sin(angle) * radius;
+      particles.push(new THREE.Vector3(x, y, 0));
+    }
+    return particles;
+  };
 
-    const points = curve.getPoints(50);
-    const ringGeometry = new THREE.BufferGeometry().setFromPoints(
-      points.map((p) => new THREE.Vector3(p.x, p.y, 0))
-    );
+  // Orbital ring geometries (now with 3 rings and particles)
+  const orbitalRings = useMemo(() => {
+    const baseRadius = symbolType === "root" ? 0.7 * scale : 0.5 * scale;
 
-    return ringGeometry;
+    return [
+      createParticleRing(baseRadius, 20, 0),
+      createParticleRing(baseRadius * 1.3, 25, Math.PI / 3),
+      createParticleRing(baseRadius * 1.6, 30, Math.PI / 6),
+    ];
   }, [symbolType, scale]);
+
+  // Orbital ring color (now orange)
+  const orbitalColor = isActive || isCompleted ? "#FFAA00" : "#FF7700";
 
   // Pulsation effect for active nodes and orbit animation for hovered nodes
   useFrame((state) => {
@@ -112,11 +132,26 @@ const Node = ({
       }
 
       // Orbital animation for hovered nodes
-      if (orbitRef.current && isHovered) {
+      if (isHovered && !isRoot) {
         const time = state.clock.getElapsedTime();
-        orbitRef.current.rotation.z = time * 1.5;
-        orbitRef.current.rotation.x = Math.sin(time) * 0.5;
-        orbitRef.current.rotation.y = Math.cos(time) * 0.5;
+
+        if (orbitRef1.current) {
+          orbitRef1.current.rotation.z = time * 1.0;
+          orbitRef1.current.rotation.x = Math.sin(time * 0.7) * 0.5;
+          orbitRef1.current.rotation.y = Math.cos(time * 0.7) * 0.5;
+        }
+
+        if (orbitRef2.current) {
+          orbitRef2.current.rotation.z = -time * 0.8;
+          orbitRef2.current.rotation.x = Math.sin(time * 0.5 + 1) * 0.4;
+          orbitRef2.current.rotation.y = Math.cos(time * 0.5 + 1) * 0.4;
+        }
+
+        if (orbitRef3.current) {
+          orbitRef3.current.rotation.z = time * 1.2;
+          orbitRef3.current.rotation.x = Math.sin(time * 0.9 + 2) * 0.3;
+          orbitRef3.current.rotation.y = Math.cos(time * 0.9 + 2) * 0.3;
+        }
       }
     }
   });
@@ -135,8 +170,11 @@ const Node = ({
         }}
         onPointerOver={(e) => {
           e.stopPropagation();
-          setIsHovered(true);
-          document.body.style.cursor = "pointer";
+          // Only allow hover on non-root nodes
+          if (!isRoot) {
+            setIsHovered(true);
+            document.body.style.cursor = "pointer";
+          }
         }}
         onPointerOut={() => {
           setIsHovered(false);
@@ -150,7 +188,7 @@ const Node = ({
           roughness={0.2}
           emissive={emissiveColor}
           emissiveIntensity={
-            isHovered ? emissiveIntensity * 1.5 : emissiveIntensity
+            isHovered && !isRoot ? emissiveIntensity * 1.5 : emissiveIntensity
           }
         />
       </mesh>
@@ -165,24 +203,108 @@ const Node = ({
         <meshBasicMaterial
           color={color}
           transparent={true}
-          opacity={isHovered ? 0.5 : isActive ? 0.4 : isCompleted ? 0.3 : 0.1}
+          opacity={
+            isHovered && !isRoot
+              ? 0.5
+              : isActive
+              ? 0.4
+              : isCompleted
+              ? 0.3
+              : 0.1
+          }
         />
       </mesh>
 
-      {/* Orbital ring for hover effect */}
-      {isHovered && (
-        <group ref={orbitRef}>
-          <line>
-            <bufferGeometry attach="geometry" {...orbitalRing} />
-            <lineBasicMaterial
-              attach="material"
-              color={isActive || isCompleted ? "#FFD700" : "#4080FF"}
-              linewidth={2}
-              transparent
-              opacity={0.7}
-            />
-          </line>
-        </group>
+      {/* Orbital rings for hover effect - now with 3 rings of particles */}
+      {isHovered && !isRoot && (
+        <>
+          <group ref={orbitRef1}>
+            <points>
+              <bufferGeometry>
+                <bufferAttribute
+                  attach="attributes-position"
+                  array={
+                    new Float32Array(
+                      orbitalRings[0].flatMap((v) => [v.x, v.y, v.z])
+                    )
+                  }
+                  count={orbitalRings[0].length}
+                  itemSize={3}
+                  args={[
+                    new Float32Array(
+                      orbitalRings[0].flatMap((v) => [v.x, v.y, v.z])
+                    ),
+                    3,
+                  ]}
+                />
+              </bufferGeometry>
+              <pointsMaterial
+                size={0.05}
+                color={orbitalColor}
+                transparent
+                opacity={0.8}
+              />
+            </points>
+          </group>
+
+          <group ref={orbitRef2}>
+            <points>
+              <bufferGeometry>
+                <bufferAttribute
+                  attach="attributes-position"
+                  array={
+                    new Float32Array(
+                      orbitalRings[1].flatMap((v) => [v.x, v.y, v.z])
+                    )
+                  }
+                  count={orbitalRings[1].length}
+                  itemSize={3}
+                  args={[
+                    new Float32Array(
+                      orbitalRings[1].flatMap((v) => [v.x, v.y, v.z])
+                    ),
+                    3,
+                  ]}
+                />
+              </bufferGeometry>
+              <pointsMaterial
+                size={0.04}
+                color={orbitalColor}
+                transparent
+                opacity={0.7}
+              />
+            </points>
+          </group>
+
+          <group ref={orbitRef3}>
+            <points>
+              <bufferGeometry>
+                <bufferAttribute
+                  attach="attributes-position"
+                  array={
+                    new Float32Array(
+                      orbitalRings[2].flatMap((v) => [v.x, v.y, v.z])
+                    )
+                  }
+                  count={orbitalRings[2].length}
+                  itemSize={3}
+                  args={[
+                    new Float32Array(
+                      orbitalRings[2].flatMap((v) => [v.x, v.y, v.z])
+                    ),
+                    3,
+                  ]}
+                />
+              </bufferGeometry>
+              <pointsMaterial
+                size={0.03}
+                color={orbitalColor}
+                transparent
+                opacity={0.6}
+              />
+            </points>
+          </group>
+        </>
       )}
 
       {/* Letter label if provided */}
@@ -193,7 +315,7 @@ const Node = ({
           color={
             isActive || isCompleted
               ? "#FFFFFF"
-              : isHovered
+              : isHovered && !isRoot
               ? "#FFFFFF"
               : "#AAAAAA"
           }

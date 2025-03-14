@@ -3,6 +3,19 @@ import { MorseSymbol, timings } from "./morse";
 // Create audio context
 let audioContext: AudioContext | null = null;
 
+// Track mute state
+let isMuted: boolean = false;
+
+// Set mute state
+export const setMuted = (muted: boolean): void => {
+  isMuted = muted;
+};
+
+// Get current mute state
+export const getMuted = (): boolean => {
+  return isMuted;
+};
+
 // Initialize audio context on first user interaction
 const initAudioContext = (): AudioContext => {
   if (!audioContext) {
@@ -19,6 +32,12 @@ const createBeep = (
   volume: number = 0.7
 ): Promise<void> => {
   return new Promise((resolve) => {
+    // If muted, just resolve without playing sound
+    if (isMuted) {
+      setTimeout(resolve, duration);
+      return;
+    }
+
     const context = initAudioContext();
 
     // Create oscillator
