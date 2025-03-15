@@ -179,7 +179,7 @@ export default function Home() {
                   </div>
 
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-6">
+                    <div className="flex flex-col gap-4 items-center ">
                       {/* Sound toggle */}
                       <div className="flex items-center space-x-2">
                         <Switch
