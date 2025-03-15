@@ -71,7 +71,7 @@ export default function Home() {
     // Generate audio and update visualization
     generateMorseAudio(
       code,
-      (index, symbol) => {
+      (index) => {
         // This is called when each symbol plays
         const currentSymbols = code
           .slice(0, index + 1)

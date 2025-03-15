@@ -20,7 +20,8 @@ export const getMuted = (): boolean => {
 const initAudioContext = (): AudioContext => {
   if (!audioContext) {
     audioContext = new (window.AudioContext ||
-      (window as any).webkitAudioContext)();
+      (window as { webkitAudioContext: typeof AudioContext })
+        .webkitAudioContext)();
   }
   return audioContext;
 };

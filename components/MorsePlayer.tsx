@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { decodeMorse, encodeMorse, MorseNode, MorseSymbol } from "@/lib/morse";
+import { encodeMorse, MorseNode, MorseSymbol } from "@/lib/morse";
 import MorseTreeVisualization from "./MorseTreeVisualization";
 import { Button } from "./ui/button";
 import { Play, Pause, RefreshCw } from "lucide-react";
@@ -135,7 +135,7 @@ const MorseAudio = ({
       }
 
       // Play the Morse code
-      let timeAccumulator = 0;
+      const timeAccumulator = 0;
       playbackInterval.current = setInterval(() => {
         if (currentIndexRef.current >= parts.length) {
           cleanup();
