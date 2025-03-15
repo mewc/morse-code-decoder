@@ -85,8 +85,9 @@ export const generateMorseAudio = (
     // Schedule each symbol to play at the right time
     const timeout = setTimeout(async () => {
       const duration = symbol === "." ? timings.dot : timings.dash;
-      await createBeep(duration);
+      // Call onSymbolPlay BEFORE creating the beep - this will light up the node when the sound starts
       onSymbolPlay(index, symbol);
+      await createBeep(duration);
     }, currentTime);
 
     activeTimeouts.push(timeout);

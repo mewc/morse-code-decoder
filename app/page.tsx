@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/card";
 import { Volume2, VolumeX, Play, Square, Repeat } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
+import Link from "next/link";
 
 export default function Home() {
   const [inputText, setInputText] = useState<string>("");
@@ -344,7 +345,14 @@ export default function Home() {
             </p>
           </CardContent>
           <CardFooter className="text-slate-400 text-sm">
-            <p>Based on standard international Morse code patterns</p>
+            <Link
+              href="https://en.wikipedia.org/wiki/Morse_code"
+              target="_blank"
+              className="hover:text-amber-400 transition-colors"
+              title="Based on standard international Morse code patterns"
+            >
+              Based on standard international Morse code patterns
+            </Link>
           </CardFooter>
         </Card>
       </div>
