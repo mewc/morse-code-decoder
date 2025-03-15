@@ -1,6 +1,9 @@
 # International Morse Code Visualization
 
-An interactive visualization of the international Morse code decoding tree using Three.js and Next.js. This application allows users to input text, which is then converted into Morse code. As each Morse code symbol plays, the visualization shows the path through the decoding tree, highlighting how each letter is formed by following a specific path of dots and dashes.
+vibe coded w cursor agents claude 3.7
+
+
+--
 
 ## Features
 

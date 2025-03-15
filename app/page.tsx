@@ -130,19 +130,19 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-slate-900 text-white p-4 md:p-8">
       <div className="max-w-5xl mx-auto space-y-8">
-        <header className="text-center py-8">
+        {/* <header className="text-center py-8">
           <h1 className="text-4xl md:text-5xl font-bold text-amber-400 mb-4">
             International Morse Decoding
           </h1>
           <p className="text-slate-300 text-lg">
             Enter text and watch it travel through the morse tree with sound
           </p>
-        </header>
+        </header> */}
 
         <Card className="bg-slate-800 border-slate-700">
           <CardHeader>
             <CardTitle className="text-amber-400">
-              {isPlaying ? "Now Playing" : "Controls"}
+              Morse Code: {isPlaying ? "Now Playing" : "Controls"}
             </CardTitle>
           </CardHeader>
           <CardContent>

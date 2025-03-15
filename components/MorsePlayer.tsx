@@ -5,14 +5,14 @@ import { encodeMorse, MorseNode, MorseSymbol } from "@/lib/morse";
 import MorseTreeVisualization from "./MorseTreeVisualization";
 import { Button } from "./ui/button";
 import { Play, Pause, RefreshCw } from "lucide-react";
-import { Slider } from "./ui/slider";
+import { Slider } from "@/components/ui/slider";
 import {
   Card,
   CardContent,
   CardFooter,
   CardHeader,
   CardTitle,
-} from "./ui/card";
+} from "@/components/ui/card";
 
 // The MorseAudio component handles the actual sound playback
 const MorseAudio = ({
