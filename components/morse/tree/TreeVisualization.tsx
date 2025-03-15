@@ -26,11 +26,11 @@ const NODE_POSITIONS: Record<string, [number, number, number]> = {
   Q: [6, 4, 0],
 
   // Third row
-  R: [-1, 2, 0], 
+  R: [-2, 2, 0],
   W: [-4, 2, 0],
   F: [-6, 2, 0],
-  Z: [5, 2, 0], 
-  
+  Z: [5, 2, 0],
+
   // Fourth row
   L: [-1, 0, 0],
   P: [-3, 0, 0],

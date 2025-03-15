@@ -19,8 +19,9 @@ export const getMuted = (): boolean => {
 // Initialize audio context on first user interaction
 const initAudioContext = (): AudioContext => {
   if (!audioContext) {
-    audioContext = new (window.AudioContext ||
-      (window as { webkitAudioContext: typeof AudioContext })
+    // Cast window to unknown first, then to the specific type
+    audioContext = new (window.AudioContext || 
+      ((window as unknown) as { webkitAudioContext: typeof AudioContext })
         .webkitAudioContext)();
   }
   return audioContext;
