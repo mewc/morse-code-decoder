@@ -18,17 +18,19 @@ import {
   CardTitle,
   CardFooter,
 } from "@/components/ui/card";
-import { Volume2, VolumeX, Play, Square } from "lucide-react";
+import { Volume2, VolumeX, Play, Square, Repeat } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 
 export default function Home() {
   const [inputText, setInputText] = useState<string>("");
   const [morseCode, setMorseCode] = useState<string>("");
   const [currentLetter, setCurrentLetter] = useState<string>("");
+  const [currentLetterIndex, setCurrentLetterIndex] = useState<number>(-1);
   const [currentPath, setCurrentPath] = useState<MorseSymbol[]>([]);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [letterCompleted, setLetterCompleted] = useState<boolean>(false);
   const [isMuted, setIsMuted] = useState<boolean>(getMuted());
+  const [loopEnabled, setLoopEnabled] = useState<boolean>(false);
 
   // Clear any existing audio on component unmount
   useEffect(() => {
@@ -44,8 +46,13 @@ export default function Home() {
     setMuted(newMutedState);
   };
 
+  // Handle loop toggle
+  const handleLoopToggle = () => {
+    setLoopEnabled(!loopEnabled);
+  };
+
   // Play the morse code for a letter
-  const playLetter = (letter: string) => {
+  const playLetter = (letter: string, index: number) => {
     if (!letter.trim()) return;
 
     // Get the Morse code for the current letter
@@ -55,6 +62,7 @@ export default function Home() {
     if (!code) return;
 
     setCurrentLetter(upperLetter);
+    setCurrentLetterIndex(index);
     setMorseCode(code);
     setIsPlaying(true);
     setLetterCompleted(false);
@@ -70,28 +78,29 @@ export default function Home() {
           .split("") as MorseSymbol[];
         setCurrentPath(currentSymbols);
       },
-        () => {
-          // This is called when letter is complete
-          setLetterCompleted(true);
+      () => {
+        // This is called when letter is complete
+        setLetterCompleted(true);
 
-          // Move to the next letter after a delay
-          setTimeout(() => {
-            // Process the next letter in the queue or finish
-            setIsPlaying(false);
-            setCurrentPath([]);
-            setLetterCompleted(false);
+        // Move to the next letter after a delay
+        setTimeout(() => {
+          // Process the next letter in the queue or finish
+          setIsPlaying(false);
+          setCurrentPath([]);
+          setLetterCompleted(false);
 
-            // Find the index of the current letter in the input text
-            const upperInputText = inputText.toUpperCase();
-            const index = upperInputText.indexOf(upperLetter);
-
-            // If there's a next letter, play it
-            if (index !== -1 && index < upperInputText.length - 1) {
-              const nextLetter = upperInputText.charAt(index + 1);
-              playLetter(nextLetter);
+          // If there's a next letter, play it
+          if (index < inputText.length - 1) {
+            const nextLetter = inputText[index + 1];
+            playLetter(nextLetter, index + 1);
+          } else if (loopEnabled) {
+            // If loop is enabled and we're at the end, start over
+            if (inputText.length > 0) {
+              playLetter(inputText[0], 0);
             }
-          }, 800);
-        };
+          }
+        }, 800);
+      }
     );
   };
 
@@ -105,7 +114,7 @@ export default function Home() {
 
     // Start with the first letter
     if (inputText.length > 0) {
-      playLetter(inputText[0]);
+      playLetter(inputText[0], 0);
     }
   };
 
@@ -115,6 +124,7 @@ export default function Home() {
     setIsPlaying(false);
     setCurrentPath([]);
     setLetterCompleted(false);
+    setCurrentLetterIndex(-1);
   };
 
   return (
@@ -169,47 +179,72 @@ export default function Home() {
                   </div>
 
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <Switch
-                        checked={!isMuted}
-                        onCheckedChange={() => handleMuteToggle()}
-                        id="sound-toggle"
-                      />
-                      <label
-                        htmlFor="sound-toggle"
-                        className="flex items-center cursor-pointer text-slate-300"
-                      >
-                        {isMuted ? (
-                          <>
-                            <VolumeX className="h-4 w-4 mr-2 text-slate-400" />
-                            Sound Off
-                          </>
-                        ) : (
-                          <>
-                            <Volume2 className="h-4 w-4 mr-2 text-amber-400" />
-                            Sound On
-                          </>
-                        )}
-                      </label>
+                    <div className="flex items-center space-x-6">
+                      {/* Sound toggle */}
+                      <div className="flex items-center space-x-2">
+                        <Switch
+                          checked={!isMuted}
+                          onCheckedChange={handleMuteToggle}
+                          id="sound-toggle"
+                        />
+                        <label
+                          htmlFor="sound-toggle"
+                          className="flex items-center cursor-pointer text-slate-300"
+                        >
+                          {isMuted ? (
+                            <>
+                              <VolumeX className="h-4 w-4 mr-2 text-slate-400" />
+                              Sound Off
+                            </>
+                          ) : (
+                            <>
+                              <Volume2 className="h-4 w-4 mr-2 text-amber-400" />
+                              Sound On
+                            </>
+                          )}
+                        </label>
+                      </div>
+
+                      {/* Loop toggle */}
+                      <div className="flex items-center space-x-2">
+                        <Switch
+                          checked={loopEnabled}
+                          onCheckedChange={handleLoopToggle}
+                          id="loop-toggle"
+                        />
+                        <label
+                          htmlFor="loop-toggle"
+                          className="flex items-center cursor-pointer text-slate-300"
+                        >
+                          <Repeat
+                            className={`h-4 w-4 mr-2 ${
+                              loopEnabled ? "text-amber-400" : "text-slate-400"
+                            }`}
+                          />
+                          Loop {loopEnabled ? "On" : "Off"}
+                        </label>
+                      </div>
                     </div>
                   </div>
                 </div>
               ) : (
-                <div className="space-y-5">
+                <div className="space-y-3 py-2">
                   {/* Current word with highlighted letter */}
                   <div className="flex justify-between items-center">
                     <div className="text-base text-slate-300 font-mono tracking-wider">
-                      <div className="mb-2 text-xs text-slate-500 uppercase">
+                      <div className="mb-1 text-xs text-slate-500 uppercase">
                         Current Word
                       </div>
                       {inputText.split("").map((char, index) => {
-                        const isCurrentLetter =
-                          char.toUpperCase() === currentLetter;
+                        const isCurrentLetterIndex =
+                          index === currentLetterIndex;
                         return (
                           <span
                             key={index}
                             className={
-                              isCurrentLetter ? "text-amber-400 font-bold" : ""
+                              isCurrentLetterIndex
+                                ? "text-amber-400 font-bold"
+                                : ""
                             }
                           >
                             {char}
@@ -229,10 +264,10 @@ export default function Home() {
 
                   {/* Current letter and morse code */}
                   <div className="text-center">
-                    <div className="text-5xl font-bold mb-4 text-amber-400">
+                    <div className="text-4xl font-bold mb-2 text-amber-400">
                       {currentLetter}
                     </div>
-                    <div className="text-2xl font-mono tracking-wider">
+                    <div className="text-xl font-mono tracking-wider">
                       {morseCode.split("").map((symbol, idx) => (
                         <span
                           key={idx}
@@ -248,8 +283,9 @@ export default function Home() {
                     </div>
                   </div>
 
-                  {/* Sound status indicator */}
-                  <div className="flex justify-center mt-2">
+                  {/* Controls indicators row */}
+                  <div className="flex justify-center mt-1 space-x-4">
+                    {/* Sound status indicator */}
                     <div className="flex items-center text-xs text-slate-400">
                       {isMuted ? (
                         <>
@@ -261,6 +297,13 @@ export default function Home() {
                         </>
                       )}
                     </div>
+
+                    {/* Loop status indicator */}
+                    {loopEnabled && (
+                      <div className="flex items-center text-xs text-slate-400">
+                        <Repeat className="h-3 w-3 mr-1" /> Loop On
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
@@ -273,7 +316,18 @@ export default function Home() {
           currentPath={currentPath}
           isPlaying={isPlaying}
           letterCompleted={letterCompleted}
-          onPlayLetter={playLetter}
+          onPlayLetter={(letter) => {
+            if (!isPlaying) {
+              // Find the letter in the input text to get its index
+              const index = inputText.toUpperCase().indexOf(letter);
+              if (index !== -1) {
+                playLetter(letter, index);
+              } else {
+                // If letter is not in the current input, just play it directly
+                playLetter(letter, 0);
+              }
+            }
+          }}
         />
 
         <Card className="bg-slate-800 border-slate-700">
